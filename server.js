@@ -15,7 +15,9 @@ const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 app.use(cors({ origin: true }));
-
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 // Stripe webhooks need the raw body, so this route is registered
 // BEFORE the global express.json() body parser below.
 app.post('/api/webhook', express.raw({ type: 'application/json' }), (req, res) => {
