@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anvil Admin — CMS</title>
+<style>
+  :root{ --bg:#0b0b14; --panel:#12121f; --line:#232336; --text:#f2f2f7; --muted:#8d8fa3; --accent:#a855f7; }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:-apple-system,Inter,system-ui,sans-serif; background:var(--bg); color:var(--text); }
+  header{ padding:20px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; }
+  header h1{ font-size:1.15rem; margin:0; }
+  main{ padding:28px; max-width:1000px; margin:0 auto; }
+  .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:32px; }
+  .stat{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .stat .label{ color:var(--muted); font-size:0.8rem; margin-bottom:6px; }
+  .stat .value{ font-size:1.6rem; font-weight:700; }
+  section{ margin-bottom:36px; }
+  h2{ font-size:1rem; margin-bottom:14px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; }
+  table{ width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th,td{ text-align:left; padding:12px 14px; border-bottom:1px solid var(--line); font-size:0.88rem; }
+  th{ color:var(--muted); font-weight:600; }
+  tr:last-child td{ border-bottom:none; }
+  input{ background:#0b0b14; border:1px solid var(--line); color:var(--text); padding:6px 8px; border-radius:6px; width:100%; font-size:0.85rem; }
+  button{ background:var(--accent); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.85rem; }
+  button:hover{ opacity:0.9; }
+  .status-pill{ padding:3px 9px; border-radius:12px; font-size:0.75rem; font-weight:600; }
+  .status-paid{ background:rgba(163,230,53,0.15); color:#a3e635; }
+  .status-pending{ background:rgba(250,204,21,0.15); color:#facc15; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚒️ Anvil — Admin CMS</h1>
+  <span style="color:var(--muted); font-size:0.85rem;">payments &amp; plans</span>
+</header>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <section>
+    <h2>Plans</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Name</th><th>Price (USD/mo)</th><th>Stripe price ID</th><th>Active</th><th></th></tr></thead>
+      <tbody id="plansBody"></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Recent orders</h2>
+    <table>
+      <thead><tr><th>Session</th><th>Email</th><th>Plan</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
+      <tbody id="ordersBody"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  const fmt = c => (c/100).toLocaleString('en-US', { style:'currency', currency:'USD' });
+
+  async function loadStats(){
+    const s = await (await fetch('/admin/api/stats')).json();
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="label">Total revenue</div><div class="value">${fmt(s.totalRevenue)}</div></div>
+      <div class="stat"><div class="label">Paid orders</div><div class="value">${s.paidOrders}</div></div>
+      <div class="stat"><div class="label">Pending checkouts</div><div class="value">${s.pendingOrders}</div></div>
+    `;
+  }
+
+  async function loadPlans(){
+    const plans = await (await fetch('/admin/api/plans')).json();
+    document.getElementById('plansBody').innerHTML = plans.map(p => `
+      <tr data-id="${p.id}">
+        <td>${p.id}</td>
+        <td><input value="${p.name}" data-field="name"></td>
+        <td><input type="number" value="${p.price_cents}" data-field="price_cents"></td>
+        <td><input value="${p.stripe_price_id || ''}" data-field="stripe_price_id" placeholder="price_..."></td>
+        <td><input type="checkbox" data-field="active" ${p.active ? 'checked' : ''}></td>
+        <td><button data-save="${p.id}">Save</button></td>
+      </tr>
+    `).join('');
+
+    document.querySelectorAll('button[data-save]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const row = btn.closest('tr');
+        const plan = plans.find(p => p.id === row.dataset.id);
+        const body = {
+          name: row.querySelector('[data-field="name"]').value,
+          price_cents: parseInt(row.querySelector('[data-field="price_cents"]').value, 10),
+          description: plan.description,
+          stripe_price_id: row.querySelector('[data-field="stripe_price_id"]').value,
+          active: row.querySelector('[data-field="active"]').checked
+        };
+        await fetch(`/admin/api/plans/${row.dataset.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        btn.textContent = 'Saved ✓';
+        setTimeout(()=> btn.textContent = 'Save', 1200);
+      });
+    });
+  }
+
+  async function loadOrders(){
+    const orders = await (await fetch('/admin/api/orders')).json();
+    document.getElementById('ordersBody').innerHTML = orders.map(o => `
+      <tr>
+        <td style="font-family:monospace; font-size:0.78rem;">${(o.stripe_session_id||'').slice(0,18)}…</td>
+        <td>${o.customer_email || '—'}</td>
+        <td>${o.plan_id}</td>
+        <td>${fmt(o.amount_cents || 0)}</td>
+        <td><span class="status-pill status-${o.status}">${o.status}</span></td>
+        <td>${o.created_at}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="color:var(--muted)">No orders yet.</td></tr>';
+  }
+
+  loadStats(); loadPlans(); loadOrders();
+</script>
+</body>
+</html>
