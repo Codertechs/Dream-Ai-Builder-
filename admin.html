@@ -59,7 +59,7 @@
   const fmt = c => (c/100).toLocaleString('en-US', { style:'currency', currency:'USD' });
 
   async function loadStats(){
-    const s = await (await fetch('/admin/api/stats')).json();
+    const s = await (await fetch(https://dream-ai-builder-1.onrender.com/admin/api/stats)).json();
     document.getElementById('stats').innerHTML = `
       <div class="stat"><div class="label">Total revenue</div><div class="value">${fmt(s.totalRevenue)}</div></div>
       <div class="stat"><div class="label">Paid orders</div><div class="value">${s.paidOrders}</div></div>
