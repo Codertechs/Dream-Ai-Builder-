@@ -1,0 +1,15 @@
+# dependencies
+backend/node_modules/
+
+# secrets — never commit your real keys
+backend/.env
+
+# local database
+backend/*.db
+backend/*.db-journal
+backend/*.db-wal
+backend/*.db-shm
+
+# OS / editor cruft
+.DS_Store
+*.log
