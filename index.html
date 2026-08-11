@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Dream Builder — Describe it. AI Dream Builder builds it.</title>
+<meta name="description" content="AI Dream Builder turns plain-language prompts into working apps, games, and software — with every major AI model wired in.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0a0a;
+    --bg-panel: #141414;
+    --line: rgba(255,255,255,0.12);
+    --text: #f5f5f5;
+    --muted: #9a9a9a;
+    --blue: #5AC8FA;        /* baby blue — primary/main brand color */
+    --blue-deep: #1565C0;   /* deep blue — gradient & shadow depth */
+    --red: #E63946;         /* title accent */
+    --yellow: #FFD60A;      /* title accent */
+    --term-red: #FF3131;
+    --term-yellow: #FFEA00;
+    --term-green: #39FF14;
+    --grad: linear-gradient(120deg, var(--blue) 0%, var(--blue-deep) 100%);        /* main UI gradient */
+    --title-grad: linear-gradient(120deg, var(--red) 0%, var(--yellow) 100%);      /* headline / title gradient */
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important;}
+  }
+  a{color:inherit;}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif; letter-spacing:-0.02em;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 32px;}
+  ::selection{background:var(--blue); color:#000;}
+  a:focus-visible, button:focus-visible, textarea:focus-visible{outline:2px solid var(--blue); outline-offset:3px; border-radius:4px;}
+
+  /* background texture */
+  .glow{position:fixed; border-radius:50%; filter:blur(130px); z-index:0; pointer-events:none;}
+  .glow-1{width:540px; height:540px; background:var(--blue); top:-180px; left:-130px; opacity:0.22;}
+  .glow-2{width:460px; height:460px; background:var(--blue-deep); bottom:-200px; right:-160px; opacity:0.28;}
+  .glow-3{width:380px; height:380px; background:var(--red); top:30%; left:50%; opacity:0.08;}
+
+  /* nav */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,10,10,0.78); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:72px;}
+  .logo{display:flex; align-items:center; gap:10px; font-family:'Space Grotesk'; font-weight:700; font-size:1.2rem;}
+  .logo-mark{
+    width:28px; height:28px; border-radius:8px; display:inline-block;
+    background:var(--grad);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,0.2), 0 0 16px rgba(90,200,250,0.5);
+  }
+  .nav-links{display:flex; gap:32px; font-size:0.92rem; color:var(--muted);}
+  .nav-links a:hover{color:var(--text);}
+  .nav-cta{display:flex; gap:12px; align-items:center;}
+  .btn{
+    font-family:'Inter'; font-weight:600; font-size:0.92rem;
+    padding:11px 20px; border-radius:10px; border:none; cursor:pointer;
+    text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+    transition:transform .15s ease, opacity .15s ease, box-shadow .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--grad); color:#04101a; font-weight:700; box-shadow:0 0 18px rgba(90,200,250,0.4);}
+  .btn-primary:hover{opacity:0.95; box-shadow:0 0 26px rgba(90,200,250,0.6);}
+  .btn-ghost{background:transparent; color:var(--text); border:1px solid var(--line);}
+  .btn-ghost:hover{border-color:rgba(255,255,255,0.3);}
+  .btn:disabled{opacity:0.55; cursor:not-allowed; transform:none;}
+
+  /* hero */
+  .hero{padding:96px 0 72px; position:relative; z-index:1;}
+  .hero-grid{display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;}
+  .hero-brand{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Space Grotesk'; font-weight:700; font-size:1rem;
+    letter-spacing:0.16em; color:var(--text); margin-bottom:28px;
+    text-shadow:0 0 16px rgba(90,200,250,0.3);
+  }
+  .hero-brand .logo-mark{width:22px; height:22px; border-radius:6px;}
+  h1.headline{font-size:3.4rem; font-weight:700; line-height:1.05; margin-bottom:22px; color:var(--text);}
+  h1.headline .grad-text{
+    background:var(--title-grad);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    filter:drop-shadow(0 0 22px rgba(230,57,70,0.3)) drop-shadow(0 0 34px rgba(255,214,10,0.2));
+  }
+  .hero p.sub{font-size:1.12rem; color:var(--muted); max-width:480px; margin-bottom:32px;}
+  .hero-actions{display:flex; gap:14px; margin-bottom:28px;}
+  .btn-lg{padding:15px 26px; font-size:1rem; border-radius:12px;}
+  .api-strip{display:flex; align-items:center; gap:14px; color:var(--muted); font-size:0.82rem; flex-wrap:wrap;}
+  .api-strip span.tag{
+    border:1px solid var(--line); padding:4px 10px; border-radius:8px; font-family:'JetBrains Mono'; font-size:0.75rem; color:var(--text);
+  }
+
+  /* hero demo panel */
+  .demo-panel{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:16px; overflow:hidden;
+    box-shadow:0 30px 80px -20px rgba(21,101,192,0.45), 0 0 60px -25px rgba(90,200,250,0.25);
+  }
+  .demo-top{display:flex; align-items:center; gap:8px; padding:14px 16px; border-bottom:1px solid var(--line);}
+  .demo-top .dot-btn{width:10px; height:10px; border-radius:50%;}
+  .demo-top .d1{background:var(--term-red);} .demo-top .d2{background:var(--term-yellow);} .demo-top .d3{background:var(--term-green);}
+  .demo-top span.title{margin-left:8px; font-size:0.78rem; color:var(--muted); font-family:'JetBrains Mono';}
+  .demo-body{padding:18px;}
+  .prompt-input{
+    width:100%; resize:vertical; min-height:64px; max-height:160px;
+    background:#0c0c0c; border:1px solid var(--line); border-radius:10px;
+    color:#f2f2ec; font-family:'JetBrains Mono'; font-size:0.85rem; padding:12px 14px;
+    line-height:1.5;
+  }
+  .prompt-input::placeholder{color:#6e6e6e;}
+  .demo-controls{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px;}
+  .build-hint{font-size:0.74rem; color:#8a8a8a; font-family:'JetBrains Mono';}
+  .btn-build{
+    background:var(--grad); color:#04101a; border:none; padding:10px 18px; border-radius:9px;
+    font-weight:700; font-size:0.86rem; cursor:pointer; white-space:nowrap;
+    box-shadow:0 0 16px rgba(90,200,250,0.45);
+  }
+  .btn-build:disabled{opacity:0.5; cursor:not-allowed;}
+  .build-status{font-family:'JetBrains Mono'; font-size:0.78rem; color:var(--term-green); margin-top:12px; min-height:1.2em;}
+  .build-status.error{color:var(--term-red);}
+  .build-status.info{color:var(--term-yellow);}
+  .code-output{
+    margin-top:10px; font-family:'JetBrains Mono'; font-size:0.8rem; color:#d8d8d0;
+    white-space:pre-wrap; word-break:break-word; max-height:260px; overflow-y:auto;
+    background:#0c0c0c; border:1px solid var(--line); border-radius:10px; padding:14px;
+    display:none;
+  }
+  .code-output.show{display:block;}
+  .post-build{margin-top:16px; padding-top:14px; border-top:1px solid var(--line); display:none;}
+  .post-build.show{display:block;}
+  .gh-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .gh-input{
+    flex:1; min-width:140px; background:#0c0c0c; border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-family:'JetBrains Mono'; font-size:0.78rem; padding:9px 11px;
+  }
+  .gh-input::placeholder{color:#6e6e6e;}
+  .gh-hint{font-size:0.72rem; color:#7a7a7a; margin-top:8px; font-family:'JetBrains Mono';}
+  .gh-status{font-family:'JetBrains Mono'; font-size:0.78rem; color:var(--term-green); margin-top:8px; min-height:1.2em;}
+  .gh-status.error{color:var(--term-red);}
+  .gh-status.info{color:var(--term-yellow);}
+  .deploy-row{display:none; gap:8px; flex-wrap:wrap; margin-top:12px;}
+  .deploy-row.show{display:flex;}
+  .deploy-row .btn{padding:8px 14px; font-size:0.8rem;}
+
+  section{position:relative; z-index:1;}
+
+  /* logos / trust */
+  .trust{padding:36px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .trust .wrap{display:flex; align-items:center; gap:28px; flex-wrap:wrap; justify-content:space-between;}
+  .trust-label{color:var(--muted); font-size:0.82rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em;}
+  .trust-items{display:flex; gap:26px; flex-wrap:wrap; color:var(--muted); font-family:'JetBrains Mono'; font-size:0.85rem;}
+
+  /* features */
+  .features{padding:110px 0 90px;}
+  .section-head{max-width:600px; margin-bottom:56px;}
+  .section-head .kicker{
+    background:var(--title-grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    font-weight:700; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:12px;
+  }
+  .section-head h2{font-size:2.2rem; margin-bottom:14px; color:var(--text);}
+  .section-head p{color:var(--muted); font-size:1.05rem;}
+  .feat-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:22px;}
+  .feat-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:16px; padding:26px;
+    transition:border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .feat-card:hover{border-color:rgba(90,200,250,0.5); transform:translateY(-3px); box-shadow:0 0 30px -10px rgba(90,200,250,0.35);}
+  .feat-icon{
+    width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:rgba(90,200,250,0.14); border:1px solid rgba(90,200,250,0.35); margin-bottom:16px; font-size:1.2rem;
+  }
+  .feat-card h3{font-size:1.08rem; margin-bottom:8px; color:var(--text);}
+  .feat-card p{color:var(--muted); font-size:0.92rem;}
+
+  /* how it works */
+  .how{padding:90px 0; background:linear-gradient(180deg, transparent, rgba(90,200,250,0.06), transparent);}
+  .how-steps{display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+  .how-step{position:relative; padding-top:8px;}
+  .how-step .num{
+    font-family:'Space Grotesk'; font-weight:700; font-size:2.4rem;
+    background:var(--title-grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    display:block; margin-bottom:10px;
+    filter:drop-shadow(0 0 14px rgba(230,57,70,0.25));
+  }
+  .how-step h3{font-size:1.1rem; margin-bottom:8px; color:var(--text);}
+  .how-step p{color:var(--muted); font-size:0.92rem;}
+
+  /* pricing */
+  .pricing{padding:100px 0;}
+  .price-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:22px; align-items:stretch;}
+  .price-card{
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:18px; padding:32px;
+    display:flex; flex-direction:column;
+  }
+  .price-card.highlight{
+    border:1px solid transparent;
+    background:linear-gradient(var(--bg-panel), var(--bg-panel)) padding-box, var(--grad) border-box;
+    position:relative; transform:scale(1.03);
+    box-shadow:0 0 50px -14px rgba(90,200,250,0.4);
+  }
+  .price-card .badge{
+    position:absolute; top:-14px; right:24px; background:var(--title-grad); color:#1a1200; font-size:0.75rem; font-weight:700;
+    padding:5px 12px; border-radius:20px;
+  }
+  .price-card .plan-name{font-weight:600; font-size:1.05rem; margin-bottom:6px; color:var(--muted);}
+  .price-card .plan-price{font-family:'Space Grotesk'; font-size:2.4rem; font-weight:700; margin-bottom:4px; color:var(--text);}
+  .price-card .plan-price span{font-size:0.95rem; color:var(--muted); font-weight:500;}
+  .price-card .plan-desc{color:var(--muted); font-size:0.88rem; margin-bottom:22px;}
+  .price-card ul{list-style:none; margin-bottom:26px; flex:1;}
+  .price-card li{font-size:0.9rem; color:#d4d5e2; padding:7px 0; display:flex; gap:9px; align-items:flex-start;}
+  .price-card li::before{content:"✓"; color:var(--term-green); font-weight:700;}
+
+  /* CTA */
+  .cta-band{padding:90px 0; text-align:center;}
+  .cta-box{
+    background:var(--grad); border-radius:24px; padding:64px 32px; position:relative; overflow:hidden;
+    box-shadow:0 0 90px -10px rgba(21,101,192,0.5);
+  }
+  .cta-box h2{font-size:2rem; margin-bottom:12px; color:#04101a;}
+  .cta-box p{color:rgba(4,16,26,0.75); margin-bottom:28px; font-size:1.05rem;}
+  .btn-white{background:#0a0a0a; color:#fff;}
+
+  footer{padding:48px 0 40px; border-top:1px solid var(--line); color:var(--muted); font-size:0.85rem;}
+  footer .wrap{display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; align-items:center;}
+  footer .foot-links{display:flex; gap:22px;}
+  footer a:hover{color:var(--text);}
+
+  @media (max-width:900px){
+    .hero-grid, .feat-grid, .how-steps, .price-grid{grid-template-columns:1fr;}
+    h1.headline{font-size:2.3rem;}
+    .nav-links{display:none;}
+    .price-card.highlight{transform:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+<div class="glow glow-3"></div>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="logo-mark"></span>AI Dream Builder</div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#pricing" class="btn btn-ghost">Sign in</a>
+      <a href="#pricing" class="btn btn-primary">Start building</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="hero-brand"><span class="logo-mark"></span>AI DREAM BUILDER</div>
+      <h1 class="headline">Describe it.<br><span class="grad-text">AI Dream Builder builds it.</span></h1>
+      <p class="sub">Type what you want in plain language — a habit tracker, a 2D platformer, an internal ops tool — and AI Dream Builder writes, runs, and deploys the real thing. Every major model, one prompt box.</p>
+      <div class="hero-actions">
+        <a href="#pricing" class="btn btn-primary btn-lg">Start building free</a>
+        <a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
+      </div>
+      <div class="api-strip">
+        Powered by <span class="tag">Claude</span><span class="tag">GPT</span><span class="tag">Gemini</span><span class="tag">+ your own key</span>
+      </div>
+    </div>
+
+    <div class="demo-panel">
+      <div class="demo-top">
+        <span class="dot-btn d1"></span><span class="dot-btn d2"></span><span class="dot-btn d3"></span>
+        <span class="title">ai dream builder — new build</span>
+      </div>
+      <div class="demo-body">
+        <textarea id="promptInput" class="prompt-input" placeholder="Describe what you want to build…">Build a kanban-style task board with drag and drop</textarea>
+        <div class="demo-controls">
+          <span class="build-hint">Free build — uses shared API credits</span>
+          <button id="buildBtn" class="btn-build">Build it free →</button>
+        </div>
+        <div class="build-status" id="buildStatus"></div>
+        <pre class="code-output" id="codeOutput"></pre>
+        <div class="post-build" id="postBuild">
+          <div class="gh-row">
+            <input id="ghToken" class="gh-input" type="password" placeholder="GitHub token (repo scope)" autocomplete="off">
+            <input id="repoName" class="gh-input" type="text" placeholder="repo-name" value="my-ai-dream-build">
+            <button id="pushGithubBtn" class="btn-build">Push to GitHub</button>
+          </div>
+          <div class="gh-hint">Your token is used once to create the repo, then discarded — never stored.</div>
+          <div class="gh-status" id="ghStatus"></div>
+          <div class="deploy-row" id="deployRow">
+            <a id="viewRepoBtn" class="btn btn-ghost" target="_blank" rel="noopener">View on GitHub</a>
+            <a id="deployVercelBtn" class="btn btn-ghost" target="_blank" rel="noopener">Deploy to Vercel</a>
+            <a id="deployNetlifyBtn" class="btn btn-ghost" target="_blank" rel="noopener">Deploy to Netlify</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="trust">
+  <div class="wrap">
+    <span class="trust-label">Built and shipped with AI Dream Builder</span>
+    <div class="trust-items">
+      <span>ledger — finance tracker</span>
+      <span>orbit — team wiki</span>
+      <span>pixelrun — browser game</span>
+      <span>fieldnote — inspection app</span>
+    </div>
+  </div>
+</div>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">What you get</div>
+      <h2>One prompt box. A full stack behind it.</h2>
+      <p>AI Dream Builder isn't a code snippet generator. It plans, writes, tests, and deploys — across apps, games, and internal tools.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <h3>Any AI model, one box</h3>
+        <p>Switch between Claude, GPT, and Gemini per project, or bring your own API key. AI Dream Builder routes the prompt, you keep control.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🕹️</div>
+        <h3>Apps and games</h3>
+        <p>From CRUD dashboards to 2D game loops with physics and sprites — the builder isn't limited to forms and tables.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🧩</div>
+        <h3>Real, editable code</h3>
+        <p>Every build is a real repo. Open the file tree, edit by hand, or hand the diff back to AI Dream Builder to keep iterating.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🚀</div>
+        <h3>One-click deploy</h3>
+        <p>Ship straight to a live URL with hosting, environment variables, and previews handled for you.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">💳</div>
+        <h3>Payments built in</h3>
+        <p>Drop in Stripe checkout and subscriptions without wiring a backend yourself — AI Dream Builder scaffolds it.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔒</div>
+        <h3>Your data, your infra</h3>
+        <p>Export any project, connect your own database, or self-host the generated app. Nothing is locked in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">The flow</div>
+      <h2>From idea to live URL, in three steps</h2>
+    </div>
+    <div class="how-steps">
+      <div class="how-step">
+        <span class="num">01</span>
+        <h3>Describe the build</h3>
+        <p>Tell AI Dream Builder what you're making and pick a model. No boilerplate, no starter templates to fight with.</p>
+      </div>
+      <div class="how-step">
+        <span class="num">02</span>
+        <h3>Watch it get built</h3>
+        <p>AI Dream Builder plans the structure, writes the code, and shows you a live preview as it goes.</p>
+      </div>
+      <div class="how-step">
+        <span class="num">03</span>
+        <h3>Refine and ship</h3>
+        <p>Ask for changes in plain language, or edit code directly. Deploy when it's ready.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Pricing</div>
+      <h2>Start free. Scale when you're shipping.</h2>
+    </div>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">$0<span>/mo</span></div>
+        <div class="plan-desc">For trying AI Dream Builder out and small personal projects.</div>
+        <ul>
+          <li>3 active builds</li>
+          <li>Community model access</li>
+          <li>Public deploy URLs</li>
+          <li>Community support</li>
+        </ul>
+        <button class="btn btn-ghost checkout-btn" data-plan="starter">Get started</button>
+      </div>
+      <div class="price-card highlight">
+        <div class="badge">Most popular</div>
+        <div class="plan-name">Builder</div>
+        <div class="plan-price">$29<span>/mo</span></div>
+        <div class="plan-desc">For indie builders shipping real apps and games.</div>
+        <ul>
+          <li>Unlimited builds</li>
+          <li>Claude, GPT & Gemini access</li>
+          <li>Custom domains</li>
+          <li>Stripe payments scaffolding</li>
+          <li>Priority build queue</li>
+        </ul>
+        <button class="btn btn-primary checkout-btn" data-plan="builder">Start building</button>
+      </div>
+      <div class="price-card">
+        <div class="plan-name">Team</div>
+        <div class="plan-price">$99<span>/mo</span></div>
+        <div class="plan-desc">For small teams building and deploying together.</div>
+        <ul>
+          <li>Everything in Builder</li>
+          <li>5 seats included</li>
+          <li>Shared project workspace</li>
+          <li>Bring your own API keys</li>
+          <li>Admin & billing controls</li>
+        </ul>
+        <button class="btn btn-ghost checkout-btn" data-plan="team">Contact sales</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="wrap">
+    <div class="cta-box">
+      <h2>Your next app is one prompt away.</h2>
+      <p>No credit card required to start.</p>
+      <a href="#pricing" class="btn btn-white btn-lg">Start building free</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="logo"><span class="logo-mark"></span>AI Dream Builder</div>
+    <div class="foot-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#">Docs</a>
+      <a href="#">Status</a>
+    </div>
+    <span>© 2026 AI Dream Builder. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+  // Point this at your deployed backend from /backend.
+  const BACKEND_URL = "http://localhost:4000";
+
+  // ---------- Live "build it free" box, wired to the backend's /api/generate proxy ----------
+  const promptInput = document.getElementById('promptInput');
+  const buildBtn = document.getElementById('buildBtn');
+  const buildStatus = document.getElementById('buildStatus');
+  const codeOutput = document.getElementById('codeOutput');
+  const postBuild = document.getElementById('postBuild');
+  const ghToken = document.getElementById('ghToken');
+  const repoName = document.getElementById('repoName');
+  const pushGithubBtn = document.getElementById('pushGithubBtn');
+  const ghStatus = document.getElementById('ghStatus');
+  const deployRow = document.getElementById('deployRow');
+  const viewRepoBtn = document.getElementById('viewRepoBtn');
+  const deployVercelBtn = document.getElementById('deployVercelBtn');
+  const deployNetlifyBtn = document.getElementById('deployNetlifyBtn');
+
+  // Simple offline fallback so the box still demonstrates the flow when no
+  // backend is deployed yet — swapped out automatically for the real thing
+  // the moment BACKEND_URL points at a live server.
+  function mockGenerate(prompt){
+    const name = prompt.replace(/[^a-zA-Z0-9 ]/g,'').trim().split(/\s+/).slice(0,3).join(' ') || 'App';
+    const componentName = name.split(' ').map(w => w[0] ? w[0].toUpperCase()+w.slice(1) : '').join('') || 'MyApp';
+    return [
+      `// Preview mode — no backend connected yet, so this is a simulated build.`,
+      `// Deploy /backend and set BACKEND_URL in this file for real AI generation.`,
+      ``,
+      `export function ${componentName}() {`,
+      `  const [state, setState] = useState(null)`,
+      ``,
+      `  // TODO: "${prompt}"`,
+      `  return (`,
+      `    <div className="app">`,
+      `      <h1>${name || 'Your build'}</h1>`,
+      `    </div>`,
+      `  )`,
+      `}`
+    ].join('\n');
+  }
+
+  buildBtn.addEventListener('click', async () => {
+    const prompt = promptInput.value.trim();
+    if(!prompt){
+      buildStatus.textContent = 'Type what you want to build first.';
+      buildStatus.classList.add('error');
+      return;
+    }
+
+    buildBtn.disabled = true;
+    promptInput.disabled = true;
+    buildStatus.classList.remove('error', 'info');
+    buildStatus.textContent = 'Building… this uses a shared free API credit, please be patient.';
+    codeOutput.classList.remove('show');
+    codeOutput.textContent = '';
+    postBuild.classList.remove('show');
+    deployRow.classList.remove('show');
+    ghStatus.textContent = '';
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+
+      if(!res.ok){
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+
+      const text = (data.content || [])
+        .filter(block => block.type === 'text')
+        .map(block => block.text)
+        .join('\n') || 'No response text returned.';
+
+      buildStatus.textContent = 'Build complete. Copy the code below, or push it straight to GitHub.';
+      codeOutput.textContent = text;
+      codeOutput.classList.add('show');
+      postBuild.classList.add('show');
+    } catch (err) {
+      if(String(err.message).includes('Failed to fetch')){
+        // No backend reachable — show a simulated build instead of an error
+        // so the preview still demonstrates the full flow end to end.
+        buildStatus.classList.add('info');
+        buildStatus.textContent = 'Preview mode (no backend connected) — showing a simulated build.';
+        codeOutput.textContent = mockGenerate(prompt);
+        codeOutput.classList.add('show');
+        postBuild.classList.add('show');
+      } else {
+        buildStatus.classList.add('error');
+        if(String(err.message).includes('rate limit') || String(err.message).includes('Too many')){
+          buildStatus.textContent = "Free build limit reached for now — try again later, or add your own API key.";
+        } else {
+          buildStatus.textContent = `Build failed: ${err.message}`;
+        }
+      }
+    } finally {
+      buildBtn.disabled = false;
+      promptInput.disabled = false;
+    }
+  });
+
+  // ---------- Push the last build to GitHub, then surface one-click deploy links ----------
+  pushGithubBtn.addEventListener('click', async () => {
+    const token = ghToken.value.trim();
+    const name = repoName.value.trim();
+    const code = codeOutput.textContent;
+
+    ghStatus.classList.remove('error', 'info');
+    if(!token){ ghStatus.textContent = 'Paste a GitHub token first (needs "repo" scope).'; ghStatus.classList.add('error'); return; }
+    if(!name){ ghStatus.textContent = 'Give the repo a name.'; ghStatus.classList.add('error'); return; }
+    if(!code){ ghStatus.textContent = 'Build something first.'; ghStatus.classList.add('error'); return; }
+
+    pushGithubBtn.disabled = true;
+    ghStatus.textContent = 'Creating repo and pushing your build…';
+    deployRow.classList.remove('show');
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/github/push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, repoName: name, code, description: promptInput.value.trim().slice(0, 200) })
+      });
+      const data = await res.json();
+      if(!res.ok){
+        throw new Error(data.error || `Push failed (${res.status})`);
+      }
+
+      ghStatus.textContent = `Pushed to ${data.fullName}.`;
+      viewRepoBtn.href = data.htmlUrl;
+      deployVercelBtn.href = `https://vercel.com/new/clone?repository-url=${encodeURIComponent(data.htmlUrl)}`;
+      deployNetlifyBtn.href = `https://app.netlify.com/start/deploy?repository=${encodeURIComponent(data.htmlUrl)}`;
+      deployRow.classList.add('show');
+    } catch (err) {
+      if(String(err.message).includes('Failed to fetch')){
+        // Can't fake a real GitHub repo, so just explain clearly instead of
+        // showing a scary error — this is expected until a backend is deployed.
+        ghStatus.classList.remove('error');
+        ghStatus.classList.add('info');
+        ghStatus.textContent = "Preview mode — GitHub push needs a live backend. Deploy /backend and set BACKEND_URL to enable it.";
+      } else {
+        ghStatus.classList.add('error');
+        ghStatus.textContent = err.message;
+      }
+    } finally {
+      pushGithubBtn.disabled = false;
+    }
+  });
+
+  // ---------- Checkout wiring — calls the backend CMS's /api/checkout endpoint ----------
+  document.querySelectorAll('.checkout-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const plan = btn.dataset.plan;
+      if(plan === 'team'){
+        window.location.href = "mailto:sales@aidreambuilder.com?subject=Team%20plan";
+        return;
+      }
+      const original = btn.textContent;
+      btn.textContent = "Redirecting…";
+      btn.disabled = true;
+      try{
+        const res = await fetch(`${BACKEND_URL}/api/checkout`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ plan })
+        });
+        const data = await res.json();
+        if(data.url){
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Checkout unavailable');
+        }
+      }catch(err){
+        alert("Checkout backend isn't reachable yet. Deploy the /backend folder and update BACKEND_URL in this file.");
+      }finally{
+        btn.textContent = original;
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
